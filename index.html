@@ -65,9 +65,40 @@ tfoot tr{background:#f1f5f9;font-weight:700;border-top:2px solid #334155}
 .clickable-row{cursor:pointer;transition:background .1s}
 .clickable-row:hover{background:#eff6ff !important}
 .drill-hint{font-size:11px;color:#94a3b8;font-weight:400;margin-left:8px}
+#kc-auth{position:fixed;inset:0;background:linear-gradient(135deg,#1B2A4A 0%,#2E5090 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
+#kc-auth.hidden{display:none}
+.kc-auth-box{background:#fff;border-radius:16px;padding:40px 48px;width:360px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.35)}
+.kc-auth-box h2{font-size:22px;font-weight:800;color:#1B2A4A;margin-bottom:4px}
+.kc-auth-box p{font-size:13px;color:#64748b;margin-bottom:24px}
+.kc-auth-box input{width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px;outline:none;margin-bottom:12px;transition:border .15s}
+.kc-auth-box input:focus{border-color:#2E5090}
+.kc-auth-box button{width:100%;padding:12px;background:linear-gradient(135deg,#1B2A4A,#2E5090);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
+.kc-auth-box button:hover{opacity:.9}
+.kc-auth-error{color:#dc2626;font-size:12px;margin-top:6px;min-height:16px}
 </style>
 </head>
 <body>
+<div id="kc-auth">
+  <div class="kc-auth-box">
+    <h2>KingClass Academy</h2>
+    <p>Management Dashboard — Team Access</p>
+    <input id="kc-pw" type="password" placeholder="Enter password" autocomplete="current-password"/>
+    <button onclick="kcLogin()">Enter</button>
+    <div class="kc-auth-error" id="kc-err"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var PW="KingClass2026";
+  if(sessionStorage.getItem("kc_auth")==="1"){document.getElementById("kc-auth").classList.add("hidden");}
+  document.getElementById("kc-pw").addEventListener("keydown",function(e){if(e.key==="Enter")kcLogin();});
+  window.kcLogin=function(){
+    var v=document.getElementById("kc-pw").value;
+    if(v===PW){sessionStorage.setItem("kc_auth","1");document.getElementById("kc-auth").classList.add("hidden");}
+    else{document.getElementById("kc-err").textContent="Incorrect password. Try again.";document.getElementById("kc-pw").value="";}
+  };
+})();
+</script>
 <div id="root"></div>
 <script>
 // ============================================================
