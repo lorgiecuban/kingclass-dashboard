@@ -162,8 +162,8 @@ const {BarChart,Bar,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer
 // MAIN APP
 // ============================================================
 function App(){
-  const[currData,setCurrData]=useState(INIT_CURR);
-  const[gradeData,setGradeData]=useState(INIT_GRADE);
+  const[currData,setCurrData]=useState(()=>{try{var s=localStorage.getItem("kc_curr");return s?JSON.parse(s):INIT_CURR;}catch(e){return INIT_CURR;}});
+  const[gradeData,setGradeData]=useState(()=>{try{var s=localStorage.getItem("kc_grade");return s?JSON.parse(s):INIT_GRADE;}catch(e){return INIT_GRADE;}});
   const[period,setPeriod]=useState("YTD");
   const[tab,setTab]=useState("dashboard");
   const[uploadMsg,setUploadMsg]=useState("");
@@ -225,6 +225,11 @@ function App(){
   const currSort=useMemo(()=>[...currPerf].sort((a,b)=>b.yoy-a.yoy),[currPerf]);
   const gradeSort=useMemo(()=>[...gradePerf].sort((a,b)=>b.yoy-a.yoy),[gradePerf]);
 
+  function handleReset(){
+    try{localStorage.removeItem("kc_curr");localStorage.removeItem("kc_grade");}catch(e){}
+    setCurrData(INIT_CURR);setGradeData(INIT_GRADE);setUploadMsg("Data reset to built-in defaults.");
+  }
+
   function handleUpload(e,type){
     const file=e.target.files[0];if(!file)return;
     Papa.parse(file,{header:true,skipEmptyLines:true,complete:function(results){
@@ -234,7 +239,9 @@ function App(){
         const newPeriods=[...new Set(parsed.map(r=>r.month+"|"+r.year))];
         setCurrData(prev=>{
           const kept=prev.filter(d=>!newPeriods.includes(d.month+"|"+d.year));
-          return[...kept,...parsed];
+          const result=[...kept,...parsed];
+          try{localStorage.setItem("kc_curr",JSON.stringify(result));}catch(e){}
+          return result;
         });
         const replaced=newPeriods.length;
         const months=[...new Set(parsed.map(r=>r.month))].join(", ");
@@ -244,7 +251,9 @@ function App(){
         const newPeriods=[...new Set(parsed.map(r=>r.month+"|"+r.year))];
         setGradeData(prev=>{
           const kept=prev.filter(d=>!newPeriods.includes(d.month+"|"+d.year));
-          return[...kept,...parsed];
+          const result=[...kept,...parsed];
+          try{localStorage.setItem("kc_grade",JSON.stringify(result));}catch(e){}
+          return result;
         });
         const months=[...new Set(parsed.map(r=>r.month))].join(", ");
         setUploadMsg("Replaced "+parsed.length+" grade records ("+months+"). Overlapping periods auto-replaced.");
@@ -293,7 +302,7 @@ function App(){
       tab==="branches"&&h(renderBranches,{data:branchPerf,period:period}),
       tab==="curriculum"&&h(CurriculumTab,{data:currPerf,sorted:currSort,period:period,currData:currData,filter:filter}),
       tab==="grades"&&h(GradeTab,{data:gradePerf,sorted:gradeSort,period:period,gradeData:gradeData,filter:filter}),
-      tab==="upload"&&renderUpload(handleUpload,uploadMsg,currData,gradeData)
+      tab==="upload"&&renderUpload(handleUpload,handleReset,uploadMsg,currData,gradeData)
     )
   );
 }
@@ -706,7 +715,7 @@ function GradeTab({data,sorted,period,gradeData,filter}){
 // ============================================================
 // UPLOAD TAB
 // ============================================================
-function renderUpload(onUpload,msg,currData,gradeData){
+function renderUpload(onUpload,onReset,msg,currData,gradeData){
   const currPeriods=[...new Set(currData.map(d=>d.month+" "+d.year))].sort((a,b)=>{var ya=parseInt(a.split(" ")[1]),yb=parseInt(b.split(" ")[1]);if(ya!==yb)return ya-yb;return MONTH_ORDER.indexOf(a.split(" ")[0])-MONTH_ORDER.indexOf(b.split(" ")[0])});
   const gradePeriods=[...new Set(gradeData.map(d=>d.month+" "+d.year))].sort((a,b)=>{var ya=parseInt(a.split(" ")[1]),yb=parseInt(b.split(" ")[1]);if(ya!==yb)return ya-yb;return MONTH_ORDER.indexOf(a.split(" ")[0])-MONTH_ORDER.indexOf(b.split(" ")[0])});
   return h("div",null,
@@ -745,6 +754,9 @@ function renderUpload(onUpload,msg,currData,gradeData){
       )
     ),
     msg?h("div",{className:"msg-box"},msg):null,
+    h("div",{style:{marginBottom:16}},
+      h("button",{onClick:onReset,style:{padding:"8px 18px",background:"#f1f5f9",border:"1px solid #cbd5e1",borderRadius:8,cursor:"pointer",fontSize:13,fontWeight:600,color:"#64748b"}},"↺ Reset to built-in data")
+    ),
     h("div",{className:"how-to-box"},
       h("h3",{style:{fontWeight:700,color:C.navy,marginBottom:12}},"How to prepare your CSV files"),
       h("p",{style:{fontWeight:600,marginBottom:4,fontSize:13}},"Curriculum CSV format:"),
